@@ -549,8 +549,10 @@
             document.getElementById('record-wrapper').classList.remove('hidden');
             document.getElementById('record-wrapper').scrollIntoView({ behavior: 'smooth' });
 
-            // Telegram Message Formatting With Specific Donation Dates
-            const telegramMsg = `*အလှူတော်မတည် စာရင်းသွင်းခြင်း*\n` +
+            // Fixed Telegram Direct Message Linking Standard
+            const telegramUsername = "Ohn_Soe"; // Telegram Username (Without @)
+            
+            const telegramMsg = `အလှူတော်မတည် စာရင်းသွင်းခြင်း\n` +
                 `📌 စခန်း: ${dbData.config.title}\n` +
                 `📅 လှူဒါန်းသည့် ရက်စွဲနှင့် ကဏ္ဍများ:\n${donatedItemsText}` +
                 `👤 အလှူရှင်: ${donorName}\n` +
@@ -559,7 +561,9 @@
                 `💳 ငွေပေးချေမှု: ${payMethod}\n` +
                 `📝 ဆုတောင်း: ${donorWish}`;
 
-            window.open(`https://t.me/Ohn_Soe?text=${encodeURIComponent(telegramMsg)}`, '_blank');
+            // Fixed URL Redirect
+            const tgUrl = `https://t.me/${telegramUsername}?text=${encodeURIComponent(telegramMsg)}`;
+            window.open(tgUrl, '_blank');
 
             selectedSlots = [];
             renderDayContent();
