@@ -33,13 +33,13 @@
             <!-- SNF Header Text -->
             <h2 class="text-lg md:text-xl font-bold text-amber-300 mb-1 tracking-wide">SNF ပြည်တွင်းပြည်ပသာသနာပြုအဖွဲ့</h2>
             <h1 id="app-title-display" class="text-2xl md:text-3xl font-bold tracking-wide">တရားစခန်း အလှူတော်မတည် စာရင်း</h1>
-            <p id="app-subtitle-display" class="text-amber-200 mt-1 text-sm md:text-base">တနေ့တာ အလှူတော်မတည် သာသနနုဂ္ဂဟ စာရင်း</p>
+            <p id="app-subtitle-display" class="text-amber-200 mt-1 text-sm md:text-base">တနေ့တာ အလှူတော်မတည် စာရင်း</p>
             
             <!-- Realtime status and Admin Panel Button -->
             <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
                 <div class="inline-flex items-center gap-2 bg-amber-950/60 text-amber-300 px-3 py-1.5 rounded-full text-xs font-semibold border border-amber-500/20">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span id="sync-status">Real-time Database </span>
+                    <span id="sync-status">Real-time Database တိုက်ရိုက်ချိတ်ဆက်နေသည်</span>
                 </div>
 
                 <!-- Admin Login Button -->
@@ -83,6 +83,27 @@
                 <span id="total-amount-display" class="text-xl font-bold text-amber-900">၀ ကျပ်</span>
             </div>
 
+            <!-- Telegram Contact Section -->
+            <div class="bg-amber-50/80 border border-amber-300 rounded-xl p-4 mb-6 text-xs text-amber-950">
+                <p class="font-bold text-sm mb-2 text-amber-900">
+                    ℹ️ ဖော်ပြပါ တရားထောက်များနှင့် ဆက်သွယ်၍ ငွေလွှဲအကောင့် တောင်းယူပြီး လှူဒါန်းနိုင်ပါသည်။ ငွေလွှဲပြီးပါက transfer screen shot နှင့် လှူဒါန်းမှုမှတ်တမ်းကို ဆက်သွယ်ထားသော တယ်လီဂရမ်အကောင့်သို့ ပေးပို့ပါ။
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
+                    <a href="https://t.me/Ohn_Soe" target="_blank" class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-amber-200 hover:border-amber-500 hover:shadow-sm transition">
+                        <span class="font-bold">U Ohn Soe</span>
+                        <span class="text-blue-600 text-xs font-semibold flex items-center gap-1">Telegram ↗</span>
+                    </a>
+                    <a href="https://t.me/Me_Me_Zin" target="_blank" class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-amber-200 hover:border-amber-500 hover:shadow-sm transition">
+                        <span class="font-bold">Daw Me Me Zin</span>
+                        <span class="text-blue-600 text-xs font-semibold flex items-center gap-1">Telegram ↗</span>
+                    </a>
+                    <a href="https://t.me/Nyein_Nyein_Aye_KyiKyi" target="_blank" class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-amber-200 hover:border-amber-500 hover:shadow-sm transition">
+                        <span class="font-bold">Daw Nyein Nyein Aye</span>
+                        <span class="text-blue-600 text-xs font-semibold flex items-center gap-1">Telegram ↗</span>
+                    </a>
+                </div>
+            </div>
+
             <!-- Form -->
             <form id="donation-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -91,23 +112,17 @@
                         <input type="text" id="donor-name" required placeholder="ဥပမာ - ဦးဘ / ဒေါ်လှ" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">ဆက်သွယ်ရန် ဖုန်းနံပါတ် <span class="text-red-500">*</span></label>
-                        <input type="tel" id="donor-phone" required placeholder="09xxxxxxxxx" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Yogi No ( ရှိလျှင် ထည့်ရန် )</label>
+                        <input type="text" id="yogi-no" placeholder="ဥပမာ - Y-102 (မဖြစ်မနေ မလိုပါ)" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">ငွေပေးချေမှု နည်းလမ်း ရွေးချယ်ရန်</label>
-                    <select id="payment-method" onchange="toggleKpayNotice()" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600 bg-white">
-                        <option value="KBZ Pay">KBZ Pay (U Ohn Soe - 09 260 395 077)</option>
-                        <option value="ပြင်ပ တိုက်ရိုက်လှူ">ပြင်ပ တိုက်ရိုက် ပေးလှူမည်</option>
+                    <select id="payment-method" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600 bg-white">
+                        <option value="Mobile Payment">Mobile Payment</option>
+                        <option value="Cash">Cash (အပြင်တွင် တိုက်ရိုက်လှူဒါန်းမည်)</option>
                     </select>
-                </div>
-
-                <!-- Web Page Notice for KBZ Pay Screen Shot -->
-                <div id="kpay-web-notice" class="bg-amber-50 border-l-4 border-amber-600 p-3 rounded text-xs text-amber-900 flex items-center gap-2">
-                    <span class="text-base">📸</span>
-                    <span><strong>သတိပြုရန်:</strong> KBZ Pay ဖြင့် လွှဲပြောင်းပါက Telegram သို့ ပေးပို့သည့်အခါ <strong>ငွေလွှဲပြေစာ Screenshot</strong> ပါ ပူးတွဲ ပေးပို့ပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်။</span>
                 </div>
 
                 <div>
@@ -142,7 +157,7 @@
             <div id="record-node" class="bg-white text-gray-800 p-6 md:p-8 rounded-2xl border-2 border-amber-300 max-w-md w-full shadow-lg relative overflow-hidden">
                 <div class="bg-amber-800 text-white text-center -mx-8 -mt-8 p-4 mb-6">
                     <p class="text-xs text-amber-200 font-bold mb-1">SNF ပြည်တွင်းပြည်ပသာသနာပြုအဖွဲ့</p>
-                    <h2 id="rec-retreat-title" class="text-base font-bold myanmar-font">တရားစခန်း သာသနနုဂ္ဂဟ အလှူတော်</h2>
+                    <h2 id="rec-retreat-title" class="text-base font-bold myanmar-font">တရားစခန်း တနေ့တာ အလှူတော်</h2>
                     <p class="text-xs text-amber-200 mt-0.5">လှူဒါန်းမှု သာဓုအနုမောဒနာ မှတ်တမ်း</p>
                 </div>
 
@@ -153,8 +168,13 @@
                     </div>
 
                     <div class="flex justify-between border-b pb-2">
-                        <span class="text-gray-500">ဆက်သွယ်ရန် ဖုန်း:</span>
-                        <span id="rec-donor-phone" class="font-semibold text-gray-800">--</span>
+                        <span class="text-gray-500">Yogi No:</span>
+                        <span id="rec-yogi-no" class="font-semibold text-gray-800">--</span>
+                    </div>
+
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">ငွေပေးချေမှု နည်းလမ်း:</span>
+                        <span id="rec-payment-method" class="font-semibold text-amber-800">--</span>
                     </div>
 
                     <div class="border-b pb-2">
@@ -213,7 +233,6 @@
             <div class="flex border-b text-xs font-bold mb-4">
                 <button onclick="switchAdminTab('event')" id="admin-tab-event" class="py-2 px-4 border-b-2 border-amber-800 text-amber-900">၁။ စခန်းအမည်နှင့် ရက်စွဲ ပြောင်းရန်</button>
                 <button onclick="switchAdminTab('slots')" id="admin-tab-slots" class="py-2 px-4 border-b-2 border-transparent text-gray-500">၂။ အကွက်များ ပိတ်/ဖွင့် စီမံရန်</button>
-                <button onclick="switchAdminTab('firebase')" id="admin-tab-firebase" class="py-2 px-4 border-b-2 border-transparent text-gray-500">၃။ Firebase Setting</button>
             </div>
 
             <!-- Tab 1: Event & Date Config -->
@@ -250,27 +269,30 @@
                 </div>
             </div>
 
-            <!-- Tab 3: Firebase Config -->
-            <div id="admin-sec-firebase" class="hidden space-y-4">
-                <p class="text-xs text-gray-500">
-                    တခြား User များနှင့် Real-time အချိန်နဲ့တစ်ပြေးညီ ချိတ်ဆက်နိုင်ရန် Firebase Realtime Database Config ထည့်ပါ:
-                </p>
-                <textarea id="cfg-firebase-json" rows="6" placeholder='{"apiKey": "...", "databaseURL": "...", ...}' class="w-full text-xs font-mono p-3 border rounded-lg focus:outline-none focus:border-amber-600"></textarea>
-                <button onclick="saveFirebaseConfig()" class="bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold px-4 py-2 rounded-lg">
-                    Firebase Config သိမ်းမည်
-                </button>
-            </div>
-
         </div>
     </div>
 
     <script>
+        // -----------------------------------------------------------------
+        // Firebase Configuration (Inserted Successfully)
+        // -----------------------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyCdH8p7lYa2DyADOX87ADISKBr7H3tgah0",
+            authDomain: "onsite-retreat.firebaseapp.com",
+            databaseURL: "https://onsite-retreat-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "onsite-retreat",
+            storageBucket: "onsite-retreat.firebasestorage.app",
+            messagingSenderId: "783955888350",
+            appId: "1:783955888350:web:38e127afb8463edbd59a4f",
+            measurementId: "G-80H6JDNKDX"
+        };
+
         // Global State & Schema
         let appConfig = {
             title: "အောက်တိုဘာ (၃၊ ၄၊ ၅) ရက် Onsite တရားစခန်း",
-            subtitle: " Onsite တနေ့တာမတည်အလှူစာရင်း",
-            startDate: "2026-10-03", // Default YYYY-MM-DD
-            adminPin: "294753618" // Exact PIN
+            subtitle: "Onsite တနေ့တာမတည်အလှူစာရင်း",
+            startDate: "2026-10-03",
+            adminPin: "294753618"
         };
 
         const categoriesTemplate = {
@@ -306,7 +328,6 @@
             return res;
         }
 
-        // Helper to format Burmese date from YYYY-MM-DD
         function getFormattedDate(baseDateStr, dayOffset) {
             let d = new Date(baseDateStr);
             d.setDate(d.getDate() + dayOffset);
@@ -314,53 +335,38 @@
             return `${monthsInBurmese[d.getMonth()]} (${d.getDate()}) ရက်`;
         }
 
-        // Toggle Web Notice based on Payment Method Select
-        function toggleKpayNotice() {
-            const payMethod = document.getElementById('payment-method').value;
-            const noticeEl = document.getElementById('kpay-web-notice');
-            if (payMethod.includes("KBZ Pay")) {
-                noticeEl.classList.remove('hidden');
-            } else {
-                noticeEl.classList.add('hidden');
-            }
-        }
-
-        // Firebase Initialization
         function initFirebase() {
-            const savedConfig = localStorage.getItem('firebase_config');
-            if (savedConfig) {
-                try {
-                    const config = JSON.parse(savedConfig);
-                    if (!firebase.apps.length) {
-                        firebase.initializeApp(config);
-                    }
-                    firebaseRef = firebase.database().ref('dynamic_retreat_app');
-                    
-                    firebaseRef.on('value', (snapshot) => {
-                        const val = snapshot.val();
-                        if (val) {
-                            dbData = val;
-                            if (dbData.config) {
-                                if (!dbData.config.adminPin) dbData.config.adminPin = "294753618";
-                                appConfig = dbData.config;
-                            }
-                            renderAppHeaderAndTabs();
-                            renderSummaryCards();
-                            renderDayContent();
-                            updateSummary();
-                            document.getElementById('sync-status').innerText = "Real-time Sync တိုက်ရိုက်ချိတ်ဆက်ထားပါသည်";
-                        }
-                    });
-                } catch (e) {
-                    console.error("Firebase Error:", e);
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
                 }
+                firebaseRef = firebase.database().ref('dynamic_retreat_app');
+                
+                firebaseRef.on('value', (snapshot) => {
+                    const val = snapshot.val();
+                    if (val) {
+                        dbData = val;
+                        if (dbData.config) {
+                            if (!dbData.config.adminPin) dbData.config.adminPin = "294753618";
+                            appConfig = dbData.config;
+                        }
+                        renderAppHeaderAndTabs();
+                        renderSummaryCards();
+                        renderDayContent();
+                        updateSummary();
+                        document.getElementById('sync-status').innerText = "Real-time Sync တိုက်ရိုက်ချိတ်ဆက်ထားပါသည်";
+                    }
+                });
+            } catch (e) {
+                console.error("Firebase Initialization Error:", e);
+                document.getElementById('sync-status').innerText = "Database ချိတ်ဆက်ရန် အမှားအယွင်းရှိပါသည်";
             }
         }
 
         function renderAppHeaderAndTabs() {
             document.getElementById('app-title-display').innerText = dbData.config.title || appConfig.title;
             document.getElementById('app-subtitle-display').innerText = dbData.config.subtitle || appConfig.subtitle;
-            document.getElementById('rec-retreat-title').innerText = `${dbData.config.title} သာသနနုဂ္ဂဟ အလှူတော်`;
+            document.getElementById('rec-retreat-title').innerText = `${dbData.config.title} တနေ့တာ အလှူတော်`;
 
             const startDate = dbData.config.startDate || appConfig.startDate;
             
@@ -504,7 +510,7 @@
             }
 
             const donorName = document.getElementById('donor-name').value.trim();
-            const donorPhone = document.getElementById('donor-phone').value.trim();
+            const yogiNo = document.getElementById('yogi-no').value.trim() || 'မရှိပါ';
             const donorWish = document.getElementById('donor-wish').value.trim() || 'ကျန်းမာပါစေ';
             const payMethod = document.getElementById('payment-method').value;
 
@@ -525,14 +531,13 @@
                 donatedItemsText += `• ${dayDateStr} - ${catObj.name} (ကွက် #${s.slotIdx + 1})\n`;
             });
 
-            // Save to Firebase
             if (firebaseRef) {
                 firebaseRef.set(dbData);
             }
 
-            // Populate Simple Donation Record Card
             document.getElementById('rec-donor-name').innerText = donorName;
-            document.getElementById('rec-donor-phone').innerText = donorPhone;
+            document.getElementById('rec-yogi-no').innerText = yogiNo;
+            document.getElementById('rec-payment-method').innerText = payMethod;
             document.getElementById('rec-total-amount').innerText = `${totalAmt.toLocaleString()} ကျပ် (${totalAmt / 100000} သိန်း)`;
             document.getElementById('rec-wish-display').innerText = donorWish;
             document.getElementById('rec-date').innerText = new Date().toLocaleDateString('my-MM');
@@ -549,19 +554,17 @@
             document.getElementById('record-wrapper').classList.remove('hidden');
             document.getElementById('record-wrapper').scrollIntoView({ behavior: 'smooth' });
 
-            // Fixed Telegram Direct Message Linking Standard
-            const telegramUsername = "Ohn_Soe"; // Telegram Username (Without @)
+            const telegramUsername = "Ohn_Soe";
             
             const telegramMsg = `အလှူတော်မတည် စာရင်းသွင်းခြင်း\n` +
                 `📌 စခန်း: ${dbData.config.title}\n` +
-                `📅 လှူဒါန်းသည့် ရက်စွဲနှင့် ကဏ္ဍများ:\n${donatedItemsText}` +
+                `📅 လှူဒန်းသည့် ရက်စွဲနှင့် ကဏ္ဍများ:\n${donatedItemsText}` +
                 `👤 အလှူရှင်: ${donorName}\n` +
-                `📞 ဖုန်း: ${donorPhone}\n` +
+                `🆔 Yogi No: ${yogiNo}\n` +
                 `💰 စုစုပေါင်း: ${totalAmt.toLocaleString()} ကျပ်\n` +
                 `💳 ငွေပေးချေမှု: ${payMethod}\n` +
                 `📝 ဆုတောင်း: ${donorWish}`;
 
-            // Fixed URL Redirect
             const tgUrl = `https://t.me/${telegramUsername}?text=${encodeURIComponent(telegramMsg)}`;
             window.open(tgUrl, '_blank');
 
@@ -580,7 +583,6 @@
             });
         }
 
-        // Admin Auth & Panel Modal Handlers
         function openAdminAuthModal() {
             document.getElementById('admin-pin-input').value = '';
             document.getElementById('admin-auth-modal').classList.remove('hidden');
@@ -621,7 +623,7 @@
         }
 
         function switchAdminTab(tabName) {
-            ['event', 'slots', 'firebase'].forEach(t => {
+            ['event', 'slots'].forEach(t => {
                 document.getElementById(`admin-tab-${t}`).className = t === tabName 
                     ? "py-2 px-4 border-b-2 border-amber-800 text-amber-900 font-bold" 
                     : "py-2 px-4 border-b-2 border-transparent text-gray-500 font-bold";
@@ -710,24 +712,11 @@
             }
         }
 
-        function saveFirebaseConfig() {
-            const raw = document.getElementById('cfg-firebase-json').value.trim();
-            try {
-                JSON.parse(raw);
-                localStorage.setItem('firebase_config', raw);
-                alert('Firebase Config သိမ်းဆည်းပြီးပါပြီ။ Page အား Reload လုပ်ပါမည်။');
-                location.reload();
-            } catch (e) {
-                alert('JSON Format မှားယွင်းနေပါသည်။ ပြန်လည်စစ်ဆေးပါ။');
-            }
-        }
-
         window.onload = function() {
             initFirebase();
             renderAppHeaderAndTabs();
             renderSummaryCards();
             renderDayContent();
-            toggleKpayNotice();
         };
     </script>
 </body>
