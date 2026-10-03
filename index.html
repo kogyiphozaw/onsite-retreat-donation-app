@@ -35,7 +35,7 @@
             <h1 id="app-title-display" class="text-2xl md:text-3xl font-bold tracking-wide">တရားစခန်း အလှူတော်မတည် စာရင်း</h1>
             <p id="app-subtitle-display" class="text-amber-200 mt-1 text-sm md:text-base">တနေ့တာ အလှူတော်မတည် သာသနနုဂ္ဂဟ စာရင်း</p>
             
-            <!-- Realtime status and Admin Panel Button placed cleanly in a row -->
+            <!-- Realtime status and Admin Panel Button -->
             <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
                 <div class="inline-flex items-center gap-2 bg-amber-950/60 text-amber-300 px-3 py-1.5 rounded-full text-xs font-semibold border border-amber-500/20">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -98,10 +98,16 @@
 
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">ငွေပေးချေမှု နည်းလမ်း ရွေးချယ်ရန်</label>
-                    <select id="payment-method" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600 bg-white">
+                    <select id="payment-method" onchange="toggleKpayNotice()" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600 bg-white">
                         <option value="KBZ Pay">KBZ Pay (U Ohn Soe - 09 260 395 077)</option>
                         <option value="ပြင်ပ တိုက်ရိုက်လှူ">ပြင်ပ တိုက်ရိုက် ပေးလှူမည်</option>
                     </select>
+                </div>
+
+                <!-- Web Page Notice for KBZ Pay Screen Shot -->
+                <div id="kpay-web-notice" class="bg-amber-50 border-l-4 border-amber-600 p-3 rounded text-xs text-amber-900 flex items-center gap-2">
+                    <span class="text-base">📸</span>
+                    <span><strong>သတိပြုရန်:</strong> KBZ Pay ဖြင့် လွှဲပြောင်းပါက Telegram သို့ ပေးပို့သည့်အခါ <strong>ငွေလွှဲပြေစာ Screenshot</strong> ပါ ပူးတွဲ ပေးပို့ပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်။</span>
                 </div>
 
                 <div>
@@ -116,7 +122,7 @@
             </form>
         </div>
 
-        <!-- Generated Simple Donation Record (No Certificate Style) -->
+        <!-- Generated Simple Donation Record -->
         <div id="record-wrapper" class="hidden mt-10 mb-12 flex flex-col items-center">
             <div class="mb-4 text-center">
                 <span class="inline-block p-2 bg-emerald-100 text-emerald-800 rounded-full mb-2">
@@ -305,7 +311,18 @@
             let d = new Date(baseDateStr);
             d.setDate(d.getDate() + dayOffset);
             const monthsInBurmese = ["ဇန်နဝါရီ", "ဖေဖော်ဝါရီ", "မတ်", "ဧပြီ", "မေ", "ဇွန်", "ဇူလိုင်", "ဩဂုတ်", "စက်တင်ဘာ", "အောက်တိုဘာ", "နိုဝင်ဘာ", "ဒီဇင်ဘာ"];
-            return `${monthsInBurmese[d.getMonth()]} ${d.getDate()} ရက်`;
+            return `${monthsInBurmese[d.getMonth()]} (${d.getDate()}) ရက်`;
+        }
+
+        // Toggle Web Notice based on Payment Method Select
+        function toggleKpayNotice() {
+            const payMethod = document.getElementById('payment-method').value;
+            const noticeEl = document.getElementById('kpay-web-notice');
+            if (payMethod.includes("KBZ Pay")) {
+                noticeEl.classList.remove('hidden');
+            } else {
+                noticeEl.classList.add('hidden');
+            }
         }
 
         // Firebase Initialization
@@ -324,7 +341,6 @@
                         if (val) {
                             dbData = val;
                             if (dbData.config) {
-                                // Keep updated pin
                                 if (!dbData.config.adminPin) dbData.config.adminPin = "294753618";
                                 appConfig = dbData.config;
                             }
@@ -489,17 +505,24 @@
 
             const donorName = document.getElementById('donor-name').value.trim();
             const donorPhone = document.getElementById('donor-phone').value.trim();
-            const donorWish = document.getElementById('donor-wish').value.trim() || 'ဤကောင်းမှုကုသိုလ် ကံဇာတကြောင့် အိုနာသေဘေးမှ လွတ်မြောက်၍ နိဗ္ဗာန်ချမ်းသာသို့ ရောက်ရှိပါစေသတည်း။';
+            const donorWish = document.getElementById('donor-wish').value.trim() || 'ကျန်းမာပါစေ';
             const payMethod = document.getElementById('payment-method').value;
 
             let totalAmt = 0;
+            let donatedItemsText = '';
+
             selectedSlots.forEach(s => {
+                const dayOffset = s.dayKey === 'day1' ? 0 : (s.dayKey === 'day2' ? 1 : 2);
+                const dayDateStr = getFormattedDate(dbData.config.startDate || appConfig.startDate, dayOffset);
                 const catObj = dbData.days[s.dayKey][s.category];
+                
                 totalAmt += catObj.pricePerSlot;
                 catObj.slots[s.slotIdx] = {
                     taken: true,
                     donor: donorName
                 };
+
+                donatedItemsText += `• ${dayDateStr} - ${catObj.name} (ကွက် #${s.slotIdx + 1})\n`;
             });
 
             // Save to Firebase
@@ -507,7 +530,7 @@
                 firebaseRef.set(dbData);
             }
 
-            // Populate Simple Donation Record
+            // Populate Simple Donation Record Card
             document.getElementById('rec-donor-name').innerText = donorName;
             document.getElementById('rec-donor-phone').innerText = donorPhone;
             document.getElementById('rec-total-amount').innerText = `${totalAmt.toLocaleString()} ကျပ် (${totalAmt / 100000} သိန်း)`;
@@ -526,13 +549,14 @@
             document.getElementById('record-wrapper').classList.remove('hidden');
             document.getElementById('record-wrapper').scrollIntoView({ behavior: 'smooth' });
 
-            // Telegram Link updated to @Ohn_Soe
-            const telegramMsg = `*အလှူတော်မတည် စာရင်းသွင်းခြင်း*%0A` +
-                `📌 စခန်း: ${dbData.config.title}%0A` +
-                `👤 အလှူရှင်: ${donorName}%0A` +
-                `📞 ဖုန်း: ${donorPhone}%0A` +
-                `💰 စုစုပေါင်း: ${totalAmt.toLocaleString()} ကျပ်%0A` +
-                `💳 ငွေပေးချေမှု: ${payMethod}%0A` +
+            // Telegram Message Formatting With Specific Donation Dates
+            const telegramMsg = `*အလှူတော်မတည် စာရင်းသွင်းခြင်း*\n` +
+                `📌 စခန်း: ${dbData.config.title}\n` +
+                `📅 လှူဒါန်းသည့် ရက်စွဲနှင့် ကဏ္ဍများ:\n${donatedItemsText}` +
+                `👤 အလှူရှင်: ${donorName}\n` +
+                `📞 ဖုန်း: ${donorPhone}\n` +
+                `💰 စုစုပေါင်း: ${totalAmt.toLocaleString()} ကျပ်\n` +
+                `💳 ငွေပေးချေမှု: ${payMethod}\n` +
                 `📝 ဆုတောင်း: ${donorWish}`;
 
             window.open(`https://t.me/Ohn_Soe?text=${encodeURIComponent(telegramMsg)}`, '_blank');
@@ -699,6 +723,7 @@
             renderAppHeaderAndTabs();
             renderSummaryCards();
             renderDayContent();
+            toggleKpayNotice();
         };
     </script>
 </body>
