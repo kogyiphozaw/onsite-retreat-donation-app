@@ -1,77 +1,711 @@
-function handleFormSubmit(e) {
-    e.preventDefault();
-    if (selectedSlots.length === 0) {
-        alert('ကျေးဇူးပြု၍ အနည်းဆုံး အလှူအကွက် ၁ ကွက် ရွေးချယ်ပေးပါခင်ဗျာ။');
-        return;
-    }
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>တရားစခန်း အလှူတော် မတည် စီမံခန့်ခွဲမှု စနစ်</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Google Fonts for Myanmar -->
+    <link href="https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&family=Pyidaungsu:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDK (v9 Compatibility Mode) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-    const donorName = document.getElementById('donor-name').value.trim();
-    const yogiNo = document.getElementById('yogi-no').value.trim() || 'မရှိပါ';
-    const donorWish = document.getElementById('donor-wish').value.trim() || 'ကျန်းမာပါစေ';
-    const payMethod = document.getElementById('payment-method').value;
+    <style>
+        body {
+            font-family: 'Pyidaungsu', 'Padauk', sans-serif;
+            background-color: #fdfbf7;
+        }
+        .myanmar-font {
+            font-family: 'Padauk', serif;
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased pb-12">
 
-    let totalAmt = 0;
-    let donatedItemsText = '';
+    <!-- Header Section -->
+    <header class="bg-amber-900 text-amber-50 shadow-lg border-b-4 border-amber-600">
+        <div class="max-w-5xl mx-auto px-4 py-6 text-center">
+            
+            <h2 class="text-lg md:text-xl font-bold text-amber-300 mb-1 tracking-wide">SNF ပြည်တွင်းပြည်ပသာသနာပြုအဖွဲ့</h2>
+            <h1 id="app-title-display" class="text-2xl md:text-3xl font-bold tracking-wide">တရားစခန်း အလှူတော်မတည် စာရင်း</h1>
+            <p id="app-subtitle-display" class="text-amber-200 mt-1 text-sm md:text-base">တနေ့တာ အလှူတော်မတည် စာရင်း</p>
+            
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <div class="inline-flex items-center gap-2 bg-amber-950/60 text-amber-300 px-3 py-1.5 rounded-full text-xs font-semibold border border-amber-500/20">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span id="sync-status">Real-time Database တိုက်ရိုက်ချိတ်ဆက်နေသည်</span>
+                </div>
 
-    // အလှူရှင် ရွေးထားသော Slot များကို Taken = true ပြောင်းခြင်း
-    selectedSlots.forEach(s => {
-        const dayOffset = s.dayKey === 'day1' ? 0 : (s.dayKey === 'day2' ? 1 : 2);
-        const dayDateStr = getFormattedDate(dbData.config.startDate || appConfig.startDate, dayOffset);
-        const catObj = dbData.days[s.dayKey][s.category];
-        
-        totalAmt += catObj.pricePerSlot;
-        catObj.slots[s.slotIdx] = {
-            taken: true,
-            donor: donorName
+                <button onclick="openAdminAuthModal()" class="bg-amber-950/80 hover:bg-black text-amber-300 border border-amber-500/40 px-3 py-1.5 rounded-full text-xs font-bold transition flex items-center gap-1 shadow-sm">
+                    <span>🔒 Admin Panel</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 mt-6">
+
+        <!-- Category Overview Cards -->
+        <div id="category-summary-cards" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 text-center text-xs md:text-sm">
+        </div>
+
+        <!-- Days Navigation Tabs -->
+        <div id="days-tabs-container" class="flex border-b border-gray-200 mb-6 bg-white rounded-t-xl overflow-hidden shadow-sm">
+        </div>
+
+        <!-- Day Slots Content -->
+        <div id="day-content" class="space-y-6">
+        </div>
+
+        <!-- Donor Selection & Submission Form -->
+        <div class="mt-8 bg-white rounded-xl shadow-md border border-amber-200 p-5 md:p-6">
+            <h2 class="text-lg font-bold text-amber-900 border-b border-amber-100 pb-2 mb-4 flex items-center justify-between">
+                <span>ရွေးချယ်ထားသော အလှူကဏ္ဍများ စာရင်း</span>
+                <span id="selected-count-badge" class="bg-amber-100 text-amber-900 text-xs px-2.5 py-1 rounded-full font-bold">၀ ကွက်</span>
+            </h2>
+
+            <div id="selected-slots-list" class="text-sm text-gray-500 italic mb-4">
+                အထက်ပါ ဇယားများမှ လှူဒါန်းလိုသော အကွက် [ နိုင်သလောက် ] များကို နှိပ်၍ ရွေးချယ်ပါ။
+            </div>
+
+            <div class="flex justify-between items-center bg-amber-50 p-3 rounded-lg border border-amber-200 mb-6">
+                <span class="font-bold text-gray-700">စုစုပေါင်း လှူဒါန်းငွေ:</span>
+                <span id="total-amount-display" class="text-xl font-bold text-amber-900">၀ ကျပ်</span>
+            </div>
+
+            <!-- Telegram Contact Section -->
+            <div class="bg-amber-50/80 border border-amber-300 rounded-xl p-4 mb-6 text-xs text-amber-950">
+                <p class="font-bold text-sm mb-2 text-amber-900">
+                    ℹ️ ဖော်ပြပါ တရားထောက်များနှင့် ဆက်သွယ်၍ ငွေလွှဲအကောင့် တောင်းယူပြီး လှူဒါန်းနိုင်ပါသည်။ ငွေလွှဲပြီးပါက transfer screen shot နှင့် လှူဒါန်းမှုမှတ်တမ်းကို ဆက်သွယ်ထားသော တယ်လီဂရမ်အကောင့်သို့ ပေးပို့ပါ။
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-3">
+                    <a href="https://t.me/Ohn_Soe" target="_blank" class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-amber-200 hover:border-amber-500 hover:shadow-sm transition">
+                        <span class="font-bold">U Ohn Soe</span>
+                        <span class="text-blue-600 text-xs font-semibold flex items-center gap-1">Telegram ↗</span>
+                    </a>
+                    <a href="https://t.me/Me_Me_Zin" target="_blank" class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-amber-200 hover:border-amber-500 hover:shadow-sm transition">
+                        <span class="font-bold">Daw Me Me Zin</span>
+                        <span class="text-blue-600 text-xs font-semibold flex items-center gap-1">Telegram ↗</span>
+                    </a>
+                    <a href="https://t.me/Nyein_Nyein_Aye_KyiKyi" target="_blank" class="flex items-center justify-between bg-white p-2.5 rounded-lg border border-amber-200 hover:border-amber-500 hover:shadow-sm transition">
+                        <span class="font-bold">Daw Nyein Nyein Aye</span>
+                        <span class="text-blue-600 text-xs font-semibold flex items-center gap-1">Telegram ↗</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form id="donation-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">အလှူရှင် အမည် <span class="text-red-500">*</span></label>
+                        <input type="text" id="donor-name" required placeholder="ဥပမာ - ဦးဘ / ဒေါ်လှ" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Yogi No ( ရှိလျှင် ထည့်ရန် )</label>
+                        <input type="text" id="yogi-no" placeholder="ဥပမာ - Y-102 (မဖြစ်မနေ မလိုပါ)" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">ငွေပေးချေမှု နည်းလမ်း ရွေးချယ်ရန်</label>
+                    <select id="payment-method" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600 bg-white">
+                        <option value="Mobile Payment">Mobile Payment</option>
+                        <option value="Cash">Cash (အပြင်တွင် တိုက်ရိုက်လှူဒါန်းမည်)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">ဆုတောင်း / အဓိဋ္ဌာန် စာလွှာ (ဆန္ဒရှိပါက)</label>
+                    <textarea id="donor-wish" rows="2" placeholder="မိသားစု ကျန်းမာရေးအတွက်... စသည်ဖြင့်" class="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-amber-600"></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-amber-800 hover:bg-amber-900 text-white font-bold py-3 px-4 rounded-xl shadow-md transition text-center flex items-center justify-center gap-2">
+                    <span>လှူဒါန်းမှု မှတ်တမ်းတင်မည်</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </button>
+            </form>
+        </div>
+
+        <!-- Generated Simple Donation Record -->
+        <div id="record-wrapper" class="hidden mt-10 mb-12 flex flex-col items-center">
+            <div class="mb-4 text-center">
+                <span class="inline-block p-2 bg-emerald-100 text-emerald-800 rounded-full mb-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </span>
+                <h3 class="text-xl font-bold text-emerald-900">လှူဒါန်းမှု စာရင်း မှတ်တမ်းတင်ပြီးပါပြီ</h3>
+                <p class="text-xs text-gray-500">အောက်ပါ မှတ်တမ်းလွှာအား ဖုန်းထဲသို့ ဒေါင်းလုဒ်ဆွဲ၍ သိမ်းဆည်းထားနိုင်ပါသည်။</p>
+                
+                <div class="mt-3 flex justify-center gap-2">
+                    <button onclick="downloadRecord()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-lg text-xs shadow transition flex items-center gap-1">
+                        📥 မှတ်တမ်းလွှာ ဒေါင်းလုဒ်ဆွဲမည်
+                    </button>
+                </div>
+            </div>
+
+            <!-- Clean Donation Record Card -->
+            <div id="record-node" class="bg-white text-gray-800 p-6 md:p-8 rounded-2xl border-2 border-amber-300 max-w-md w-full shadow-lg relative overflow-hidden">
+                <div class="bg-amber-800 text-white text-center -mx-8 -mt-8 p-4 mb-6">
+                    <p class="text-xs text-amber-200 font-bold mb-1">SNF ပြည်တွင်းပြည်ပသာသနာပြုအဖွဲ့</p>
+                    <h2 id="rec-retreat-title" class="text-base font-bold myanmar-font">တရားစခန်း တနေ့တာ အလှူတော်</h2>
+                    <p class="text-xs text-amber-200 mt-0.5">လှူဒါန်းမှု သာဓုအနုမောဒနာ မှတ်တမ်း</p>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">အလှူရှင် အမည်:</span>
+                        <span id="rec-donor-name" class="font-bold text-amber-900 text-sm">--</span>
+                    </div>
+
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">Yogi No:</span>
+                        <span id="rec-yogi-no" class="font-semibold text-gray-800">--</span>
+                    </div>
+
+                    <div class="flex justify-between border-b pb-2">
+                        <span class="text-gray-500">ငွေပေးချေမှု နည်းလမ်း:</span>
+                        <span id="rec-payment-method" class="font-semibold text-amber-800">--</span>
+                    </div>
+
+                    <div class="border-b pb-2">
+                        <span class="text-gray-500 block mb-1">လှူဒါန်းသော ကဏ္ဍများ:</span>
+                        <ul id="rec-slots-list" class="list-disc list-inside font-semibold text-gray-800 space-y-0.5 pl-1">
+                        </ul>
+                    </div>
+
+                    <div class="flex justify-between border-b pb-2 bg-amber-50 p-2 rounded">
+                        <span class="font-bold text-gray-700">စုစုပေါင်း လှူဒါန်းငွေ:</span>
+                        <span id="rec-total-amount" class="font-bold text-amber-900 text-sm">--</span>
+                    </div>
+
+                    <div class="border-b pb-2">
+                        <span class="text-gray-500 block mb-1">ဆုတောင်း အဓိဋ္ဌာန်:</span>
+                        <p id="rec-wish-display" class="italic text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">--</p>
+                    </div>
+
+                    <div class="flex justify-between text-[10px] text-gray-400 pt-1">
+                        <span>မှတ်တမ်းရက်စွဲ: <span id="rec-date">--</span></span>
+                        <span>အတည်ပြုပြီး</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 text-center text-xs text-amber-900 font-bold border-t pt-3">
+                    ကျန်းမာချမ်းသာ၍ နိဗ္ဗာန်ချမ်းသာ သို့ ရောက်ရှိပါစေသတည်း။
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Admin Auth PIN Modal -->
+    <div id="admin-auth-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <h3 class="font-bold text-amber-900 text-base mb-1">Admin စီမံခန့်ခွဲမှုစနစ်</h3>
+            <p class="text-xs text-gray-500 mb-4">Admin PIN Code ရိုက်ထည့်ပါ</p>
+            <input type="password" id="admin-pin-input" placeholder="•••••••••" class="w-full text-center text-lg font-bold tracking-widest px-3 py-2 border rounded-lg focus:outline-none focus:border-amber-600 mb-4">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeAdminAuthModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2 rounded-lg text-xs">မလုပ်တော့ပါ</button>
+                <button onclick="verifyAdminPin()" class="bg-amber-800 hover:bg-amber-900 text-white font-bold px-4 py-2 rounded-lg text-xs">ဝင်ရောက်မည်</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Full Settings Modal -->
+    <div id="admin-panel-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-amber-900 text-lg">⚙️ Admin Control Panel</h3>
+                <button onclick="closeAdminPanelModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
+            </div>
+
+            <div class="flex border-b text-xs font-bold mb-4">
+                <button onclick="switchAdminTab('event')" id="admin-tab-event" class="py-2 px-4 border-b-2 border-amber-800 text-amber-900">၁။ စခန်းအမည်နှင့် ရက်စွဲ ပြောင်းရန်</button>
+                <button onclick="switchAdminTab('slots')" id="admin-tab-slots" class="py-2 px-4 border-b-2 border-transparent text-gray-500">၂။ အကွက်များ ပိတ်/ဖွင့် စီမံရန်</button>
+            </div>
+
+            <div id="admin-sec-event" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">တရားစခန်း အမည်</label>
+                    <input type="text" id="cfg-title" class="w-full px-3 py-2 border rounded-lg text-xs font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">စတင်မည့် ရက်စွဲ (Start Date)</label>
+                    <input type="date" id="cfg-start-date" class="w-full px-3 py-2 border rounded-lg text-xs font-bold">
+                    <p class="text-[10px] text-gray-400 mt-1">* ဤရက်စွဲကို အခြေခံ၍ ဒုတိယနေ့နှင့် တတိယနေ့ ရက်စွဲများကို Auto တွက်ပေးပါမည်။</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Admin PIN Code ပြောင်းရန်</label>
+                    <input type="password" id="cfg-pin" class="w-full px-3 py-2 border rounded-lg text-xs font-bold" placeholder="PIN Code သစ်ထည့်ပါ">
+                </div>
+
+                <div class="pt-2 border-t flex justify-between items-center">
+                    <button onclick="resetAllDataForNewRetreat()" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-3 py-2 rounded-lg">
+                        ⚠️ စခန်းပွဲအသစ်အတွက် အလှူရှင် အချက်အလက်များအားလုံး Reset လုပ်မည်
+                    </button>
+                    <button onclick="saveEventSettings()" class="bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold px-4 py-2 rounded-lg">
+                        သိမ်းဆည်းမည်
+                    </button>
+                </div>
+            </div>
+
+            <div id="admin-sec-slots" class="hidden space-y-3 text-xs">
+                <p class="text-gray-500">အလှူရှင်ရှိပြီးသား အကွက်များအား ပိတ်ရန် သို့မဟုတ် အမည်ထည့်ရန်:</p>
+                <div id="admin-slots-interactive-list" class="space-y-3">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCdH8p7lYa2DyADOX87ADISKBr7H3tgah0",
+            authDomain: "onsite-retreat.firebaseapp.com",
+            databaseURL: "https://onsite-retreat-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "onsite-retreat",
+            storageBucket: "onsite-retreat.firebasestorage.app",
+            messagingSenderId: "783955888350",
+            appId: "1:783955888350:web:38e127afb8463edbd59a4f",
+            measurementId: "G-80H6JDNKDX"
         };
 
-        donatedItemsText += `• ${dayDateStr} - ${catObj.name} (ကွက် #${s.slotIdx + 1})\n`;
-    });
+        let appConfig = {
+            title: "အောက်တိုဘာ (၃၊ ၄၊ ၅) ရက် Onsite တရားစခန်း",
+            subtitle: "Onsite တနေ့တာမတည်အလှူစာရင်း",
+            startDate: "2026-10-03",
+            adminPin: "294753618"
+        };
 
-    // Firebase Database ထို့ Data အသစ်များကို အချိန်နဲ့တပြေးညီ ပေးပို့ခြင်း
-    if (firebaseRef) {
-        firebaseRef.set(dbData).then(() => {
-            console.log("Database successfully updated in real-time!");
-        }).catch((err) => {
-            alert("Database သိမ်းဆည်းရာတွင် အမှားအယွင်းရှိပါသည်: " + err.message);
-        });
-    }
+        const categoriesTemplate = {
+            lunch: { name: "နေ့ဆွမ်း", pricePerSlot: 100000, totalSlots: 8 },
+            dessert: { name: "နေ့အချိုပွဲ", pricePerSlot: 100000, totalSlots: 2 },
+            drink: { name: "ညနေ အအေး/မုန့်", pricePerSlot: 100000, totalSlots: 3 },
+            hall: { name: "ဓမ္မာရုံအလှူ", pricePerSlot: 100000, totalSlots: 2 }
+        };
 
-    // မှတ်တမ်းလွှာ ပြသခြင်း
-    document.getElementById('rec-donor-name').innerText = donorName;
-    document.getElementById('rec-yogi-no').innerText = yogiNo;
-    document.getElementById('rec-payment-method').innerText = payMethod;
-    document.getElementById('rec-total-amount').innerText = `${totalAmt.toLocaleString()} ကျပ် (${totalAmt / 100000} သိန်း)`;
-    document.getElementById('rec-wish-display').innerText = donorWish;
-    document.getElementById('rec-date').innerText = new Date().toLocaleDateString('my-MM');
+        let dbData = {
+            config: appConfig,
+            days: {
+                day1: createDaySlots(),
+                day2: createDaySlots(),
+                day3: createDaySlots()
+            }
+        };
 
-    let recListHtml = '';
-    selectedSlots.forEach(s => {
-        const dayOffset = s.dayKey === 'day1' ? 0 : (s.dayKey === 'day2' ? 1 : 2);
-        const dayDateStr = getFormattedDate(dbData.config.startDate || appConfig.startDate, dayOffset);
-        const catObj = dbData.days[s.dayKey][s.category];
-        recListHtml += `<li>${dayDateStr} - ${catObj.name} (ကွက် #${s.slotIdx + 1}) - ${catObj.pricePerSlot / 100000} သိန်း</li>`;
-    });
-    document.getElementById('rec-slots-list').innerHTML = recListHtml;
+        let selectedSlots = [];
+        let activeDayKey = 'day1';
+        let firebaseRef = null;
 
-    document.getElementById('record-wrapper').classList.remove('hidden');
-    document.getElementById('record-wrapper').scrollIntoView({ behavior: 'smooth' });
+        function createDaySlots() {
+            let res = {};
+            for (let [key, cat] of Object.entries(categoriesTemplate)) {
+                res[key] = {
+                    name: cat.name,
+                    pricePerSlot: cat.pricePerSlot,
+                    totalSlots: cat.totalSlots,
+                    slots: Array(cat.totalSlots).fill().map(() => ({ taken: false, donor: '' }))
+                };
+            }
+            return res;
+        }
 
-    // Telegram သို့ လွှဲပြောင်းပေးပို့ခြင်း
-    const telegramUsername = "Ohn_Soe";
-    const telegramMsg = `အလှူတော်မတည် စာရင်းသွင်းခြင်း\n` +
-        `📌 စခန်း: ${dbData.config.title}\n` +
-        `📅 လှူဒန်းသည့် ရက်စွဲနှင့် ကဏ္ဍများ:\n${donatedItemsText}` +
-        `👤 အလှူရှင်: ${donorName}\n` +
-        `🆔 Yogi No: ${yogiNo}\n` +
-        `💰 စုစုပေါင်း: ${totalAmt.toLocaleString()} ကျပ်\n` +
-        `💳 ငွေပေးချေမှု: ${payMethod}\n` +
-        `📝 ဆုတောင်း: ${donorWish}`;
+        function getFormattedDate(baseDateStr, dayOffset) {
+            let d = new Date(baseDateStr);
+            d.setDate(d.getDate() + dayOffset);
+            const monthsInBurmese = ["ဇန်နဝါရီ", "ဖေဖော်ဝါရီ", "မတ်", "ဧပြီ", "မေ", "ဇွန်", "ဇူလိုင်", "ဩဂုတ်", "စက်တင်ဘာ", "အောက်တိုဘာ", "နိုဝင်ဘာ", "ဒီဇင်ဘာ"];
+            return `${monthsInBurmese[d.getMonth()]} (${d.getDate()}) ရက်`;
+        }
 
-    const tgUrl = `https://t.me/${telegramUsername}?text=${encodeURIComponent(telegramMsg)}`;
-    window.open(tgUrl, '_blank');
+        function initFirebase() {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                firebaseRef = firebase.database().ref('dynamic_retreat_app');
+                
+                firebaseRef.on('value', (snapshot) => {
+                    const val = snapshot.val();
+                    if (val) {
+                        dbData = val;
+                        if (dbData.config) {
+                            if (!dbData.config.adminPin) dbData.config.adminPin = "294753618";
+                            appConfig = dbData.config;
+                        }
+                        renderAppHeaderAndTabs();
+                        renderSummaryCards();
+                        renderDayContent();
+                        updateSummary();
+                        document.getElementById('sync-status').innerText = "Real-time Sync တိုက်ရိုက်ချိတ်ဆက်ထားပါသည်";
+                    }
+                });
+            } catch (e) {
+                console.error("Firebase Initialization Error:", e);
+                document.getElementById('sync-status').innerText = "Database ချိတ်ဆက်ရန် အမှားအယွင်းရှိပါသည်";
+            }
+        }
 
-    selectedSlots = [];
-    renderDayContent();
-    updateSummary();
-}
+        function renderAppHeaderAndTabs() {
+            document.getElementById('app-title-display').innerText = dbData.config.title || appConfig.title;
+            document.getElementById('app-subtitle-display').innerText = dbData.config.subtitle || appConfig.subtitle;
+            document.getElementById('rec-retreat-title').innerText = `${dbData.config.title} တနေ့တာ အလှူတော်`;
+
+            const startDate = dbData.config.startDate || appConfig.startDate;
+            const tabsContainer = document.getElementById('days-tabs-container');
+            const dayKeys = ['day1', 'day2', 'day3'];
+            let tabsHtml = '';
+
+            dayKeys.forEach((dk, idx) => {
+                const dateStr = getFormattedDate(startDate, idx);
+                const isActive = dk === activeDayKey;
+                tabsHtml += `
+                    <button onclick="switchDay('${dk}')" class="flex-1 py-3 text-center font-bold text-xs md:text-sm border-b-2 ${isActive ? 'border-amber-700 text-amber-800 bg-amber-50/50' : 'border-transparent text-gray-500 hover:text-amber-800'} transition">
+                        ${dateStr} (${idx === 0 ? 'စတင်နေ့' : idx === 1 ? 'ဒုတိယနေ့' : 'နောက်ဆုံးနေ့'})
+                    </button>
+                `;
+            });
+            tabsContainer.innerHTML = tabsHtml;
+        }
+
+        function renderSummaryCards() {
+            const container = document.getElementById('category-summary-cards');
+            const sampleDay = dbData.days.day1;
+            let html = '';
+
+            for (let [catKey, cat] of Object.entries(sampleDay)) {
+                const totalCostLakhs = (cat.pricePerSlot * cat.totalSlots) / 100000;
+                const slotPriceLakhs = cat.pricePerSlot / 100000;
+                html += `
+                    <div class="bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                        <span class="block text-gray-500 mb-1">${cat.name}</span>
+                        <span class="font-bold text-amber-900 text-base">${totalCostLakhs} သိန်းကျပ်</span>
+                        <span class="text-gray-400 block text-xs">(${slotPriceLakhs} သိန်းတန် ${cat.totalSlots} ကွက်)</span>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function renderDayContent() {
+            const container = document.getElementById('day-content');
+            const currentDayData = dbData.days[activeDayKey];
+            let html = '';
+
+            for (const [catKey, category] of Object.entries(currentDayData)) {
+                const slotPriceLakhs = category.pricePerSlot / 100000;
+                html += `
+                    <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-bold text-amber-900 text-base">${category.name}</h4>
+                            <span class="text-xs text-gray-500">၁ ကွက် = ${slotPriceLakhs} သိန်းကျပ် (${category.totalSlots} ကွက်)</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                `;
+
+                category.slots.forEach((slot, idx) => {
+                    const isSelected = selectedSlots.some(s => s.dayKey === activeDayKey && s.category === catKey && s.slotIdx === idx);
+                    
+                    if (slot.taken) {
+                        html += `
+                            <div class="bg-gray-100 border border-gray-200 rounded-lg p-2.5 text-center cursor-not-allowed opacity-70">
+                                <span class="block text-xs font-bold text-gray-400">ကွက် #${idx + 1}</span>
+                                <span class="block text-xs font-semibold text-red-600 truncate mt-1">🔴 ${slot.donor || 'အလှူရှင်ရှိပြီး'}</span>
+                            </div>
+                        `;
+                    } else if (isSelected) {
+                        html += `
+                            <button onclick="toggleSlotSelect('${activeDayKey}', '${catKey}', ${idx})" class="bg-amber-800 border-2 border-amber-900 text-white rounded-lg p-2.5 text-center shadow-inner font-bold text-xs transition">
+                                <span class="block">ကွက် #${idx + 1}</span>
+                                <span class="block text-[10px] text-amber-200 mt-1">✓ ရွေးချယ်ထားပါသည်</span>
+                            </button>
+                        `;
+                    } else {
+                        html += `
+                            <button onclick="toggleSlotSelect('${activeDayKey}', '${catKey}', ${idx})" class="bg-amber-50/60 hover:bg-amber-100 border border-amber-200 text-amber-900 rounded-lg p-2.5 text-center text-xs transition">
+                                <span class="block font-bold">ကွက် #${idx + 1}</span>
+                                <span class="block text-[10px] text-emerald-700 font-semibold mt-1">🟢 ${slotPriceLakhs} သိန်း [ လှူနိုင်သည် ]</span>
+                            </button>
+                        `;
+                    }
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function switchDay(dayKey) {
+            activeDayKey = dayKey;
+            renderAppHeaderAndTabs();
+            renderDayContent();
+        }
+
+        function toggleSlotSelect(dayKey, category, slotIdx) {
+            const existingIdx = selectedSlots.findIndex(s => s.dayKey === dayKey && s.category === category && s.slotIdx === slotIdx);
+            if (existingIdx > -1) {
+                selectedSlots.splice(existingIdx, 1);
+            } else {
+                selectedSlots.push({ dayKey, category, slotIdx });
+            }
+            renderDayContent();
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const listEl = document.getElementById('selected-slots-list');
+            const totalEl = document.getElementById('total-amount-display');
+            const badgeEl = document.getElementById('selected-count-badge');
+
+            badgeEl.innerText = `${selectedSlots.length} ကွက်`;
+
+            if (selectedSlots.length === 0) {
+                listEl.innerHTML = `<span class="text-gray-400 italic">အထက်ပါ ဇယားများမှ လှူဒါန်းလိုသော အကွက် [ နိုင်သလောက် ] များကို နှိပ်၍ ရွေးချယ်ပါ။</span>`;
+                totalEl.innerText = `၀ ကျပ်`;
+                return;
+            }
+
+            let totalAmt = 0;
+            let html = '<ul class="space-y-1 list-disc list-inside text-gray-700">';
+            selectedSlots.forEach(s => {
+                const dayOffset = s.dayKey === 'day1' ? 0 : (s.dayKey === 'day2' ? 1 : 2);
+                const dayDateStr = getFormattedDate(dbData.config.startDate || appConfig.startDate, dayOffset);
+                const catObj = dbData.days[s.dayKey][s.category];
+                totalAmt += catObj.pricePerSlot;
+                html += `<li><strong>${dayDateStr}</strong> - ${catObj.name} (ကွက် #${s.slotIdx + 1}) - <strong>${catObj.pricePerSlot / 100000} သိန်းကျပ်</strong></li>`;
+            });
+            html += '</ul>';
+
+            listEl.innerHTML = html;
+            totalEl.innerText = `${totalAmt.toLocaleString()} ကျပ် (${totalAmt / 100000} သိန်း)`;
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            if (selectedSlots.length === 0) {
+                alert('ကျေးဇူးပြု၍ အနည်းဆုံး အလှူအကွက် ၁ ကွက် ရွေးချယ်ပေးပါခင်ဗျာ။');
+                return;
+            }
+
+            const donorName = document.getElementById('donor-name').value.trim();
+            const yogiNo = document.getElementById('yogi-no').value.trim() || 'မရှိပါ';
+            const donorWish = document.getElementById('donor-wish').value.trim() || 'ကျန်းမာပါစေ';
+            const payMethod = document.getElementById('payment-method').value;
+
+            let totalAmt = 0;
+            let donatedItemsText = '';
+
+            selectedSlots.forEach(s => {
+                const dayOffset = s.dayKey === 'day1' ? 0 : (s.dayKey === 'day2' ? 1 : 2);
+                const dayDateStr = getFormattedDate(dbData.config.startDate || appConfig.startDate, dayOffset);
+                const catObj = dbData.days[s.dayKey][s.category];
+                
+                totalAmt += catObj.pricePerSlot;
+                catObj.slots[s.slotIdx] = {
+                    taken: true,
+                    donor: donorName
+                };
+
+                donatedItemsText += `• ${dayDateStr} - ${catObj.name} (ကွက် #${s.slotIdx + 1})\n`;
+            });
+
+            if (firebaseRef) {
+                firebaseRef.set(dbData).then(() => {
+                    console.log("Database successfully updated in real-time!");
+                }).catch((err) => {
+                    alert("Database သိမ်းဆည်းရာတွင် အမှားအယွင်းရှိပါသည်: " + err.message);
+                });
+            }
+
+            document.getElementById('rec-donor-name').innerText = donorName;
+            document.getElementById('rec-yogi-no').innerText = yogiNo;
+            document.getElementById('rec-payment-method').innerText = payMethod;
+            document.getElementById('rec-total-amount').innerText = `${totalAmt.toLocaleString()} ကျပ် (${totalAmt / 100000} သိန်း)`;
+            document.getElementById('rec-wish-display').innerText = donorWish;
+            document.getElementById('rec-date').innerText = new Date().toLocaleDateString('my-MM');
+
+            let recListHtml = '';
+            selectedSlots.forEach(s => {
+                const dayOffset = s.dayKey === 'day1' ? 0 : (s.dayKey === 'day2' ? 1 : 2);
+                const dayDateStr = getFormattedDate(dbData.config.startDate || appConfig.startDate, dayOffset);
+                const catObj = dbData.days[s.dayKey][s.category];
+                recListHtml += `<li>${dayDateStr} - ${catObj.name} (ကွက် #${s.slotIdx + 1}) - ${catObj.pricePerSlot / 100000} သိန်း</li>`;
+            });
+            document.getElementById('rec-slots-list').innerHTML = recListHtml;
+
+            document.getElementById('record-wrapper').classList.remove('hidden');
+            document.getElementById('record-wrapper').scrollIntoView({ behavior: 'smooth' });
+
+            const telegramUsername = "Ohn_Soe";
+            const telegramMsg = `အလှူတော်မတည် စာရင်းသွင်းခြင်း\n` +
+                `📌 စခန်း: ${dbData.config.title}\n` +
+                `📅 လှူဒန်းသည့် ရက်စွဲနှင့် ကဏ္ဍများ:\n${donatedItemsText}` +
+                `👤 အလှူရှင်: ${donorName}\n` +
+                `🆔 Yogi No: ${yogiNo}\n` +
+                `💰 စုစုပေါင်း: ${totalAmt.toLocaleString()} ကျပ်\n` +
+                `💳 ငွေပေးချေမှု: ${payMethod}\n` +
+                `📝 ဆုတောင်း: ${donorWish}`;
+
+            const tgUrl = `https://t.me/${telegramUsername}?text=${encodeURIComponent(telegramMsg)}`;
+            window.open(tgUrl, '_blank');
+
+            selectedSlots = [];
+            renderDayContent();
+            updateSummary();
+        }
+
+        function downloadRecord() {
+            const node = document.getElementById('record-node');
+            html2canvas(node, { scale: 2, useCORS: true }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Donation_Record_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        function openAdminAuthModal() {
+            document.getElementById('admin-pin-input').value = '';
+            document.getElementById('admin-auth-modal').classList.remove('hidden');
+            document.getElementById('admin-auth-modal').classList.add('flex');
+        }
+
+        function closeAdminAuthModal() {
+            document.getElementById('admin-auth-modal').classList.add('hidden');
+            document.getElementById('admin-auth-modal').classList.remove('flex');
+        }
+
+        function verifyAdminPin() {
+            const inputPin = document.getElementById('admin-pin-input').value.trim();
+            const currentPin = dbData.config.adminPin || "294753618";
+            
+            if (inputPin === currentPin) {
+                closeAdminAuthModal();
+                openAdminPanelModal();
+            } else {
+                alert('Admin PIN Code မှားယွင်းနေပါသည်။');
+            }
+        }
+
+        function openAdminPanelModal() {
+            document.getElementById('cfg-title').value = dbData.config.title || appConfig.title;
+            document.getElementById('cfg-start-date').value = dbData.config.startDate || appConfig.startDate;
+            document.getElementById('cfg-pin').value = dbData.config.adminPin || "294753618";
+
+            renderAdminSlotsList();
+
+            document.getElementById('admin-panel-modal').classList.remove('hidden');
+            document.getElementById('admin-panel-modal').classList.add('flex');
+        }
+
+        function closeAdminPanelModal() {
+            document.getElementById('admin-panel-modal').classList.add('hidden');
+            document.getElementById('admin-panel-modal').classList.remove('flex');
+        }
+
+        function switchAdminTab(tabName) {
+            ['event', 'slots'].forEach(t => {
+                document.getElementById(`admin-tab-${t}`).className = t === tabName 
+                    ? "py-2 px-4 border-b-2 border-amber-800 text-amber-900 font-bold" 
+                    : "py-2 px-4 border-b-2 border-transparent text-gray-500 font-bold";
+                document.getElementById(`admin-sec-${t}`).classList.toggle('hidden', t !== tabName);
+            });
+        }
+
+        function saveEventSettings() {
+            dbData.config.title = document.getElementById('cfg-title').value.trim();
+            dbData.config.startDate = document.getElementById('cfg-start-date').value;
+            
+            const newPin = document.getElementById('cfg-pin').value.trim();
+            if (newPin) {
+                dbData.config.adminPin = newPin;
+            }
+
+            if (firebaseRef) {
+                firebaseRef.set(dbData);
+            }
+
+            renderAppHeaderAndTabs();
+            renderSummaryCards();
+            renderDayContent();
+            alert('စခန်းအမည်နှင့် ရက်စွဲ ပြောင်းလဲသိမ်းဆည်းပြီးပါပြီ။');
+            closeAdminPanelModal();
+        }
+
+        function renderAdminSlotsList() {
+            const container = document.getElementById('admin-slots-interactive-list');
+            let html = '';
+
+            ['day1', 'day2', 'day3'].forEach((dk, idx) => {
+                const dateStr = getFormattedDate(dbData.config.startDate || appConfig.startDate, idx);
+                html += `<div class="font-bold text-amber-900 border-b pb-1 mt-3 mb-2">${dateStr}</div>`;
+
+                for (let [catKey, cat] of Object.entries(dbData.days[dk])) {
+                    cat.slots.forEach((slot, sIdx) => {
+                        html += `
+                            <div class="flex items-center justify-between bg-gray-50 p-2 rounded border">
+                                <span>${cat.name} (ကွက် #${sIdx + 1})</span>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" id="adm-donor-${dk}-${catKey}-${sIdx}" value="${slot.donor || ''}" placeholder="အလှူရှင်အမည်" class="px-2 py-1 border rounded text-xs w-32">
+                                    <button onclick="adminToggleSlot('${dk}', '${catKey}', ${sIdx})" class="${slot.taken ? 'bg-red-600' : 'bg-emerald-600'} text-white px-2 py-1 rounded text-xs font-bold">
+                                        ${slot.taken ? 'ပိတ်ထားသည်' : 'ဖွင့်ထားသည်'}
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            });
+
+            container.innerHTML = html;
+        }
+
+        function adminToggleSlot(dayKey, catKey, sIdx) {
+            const donorVal = document.getElementById(`adm-donor-${dayKey}-${catKey}-${sIdx}`).value.trim();
+            const currStatus = dbData.days[dayKey][catKey].slots[sIdx].taken;
+
+            dbData.days[dayKey][catKey].slots[sIdx] = {
+                taken: !currStatus,
+                donor: !currStatus ? (donorVal || 'အလှူရှင်ရှိပြီး') : ''
+            };
+
+            if (firebaseRef) {
+                firebaseRef.set(dbData);
+            }
+
+            renderDayContent();
+            renderAdminSlotsList();
+        }
+
+        function resetAllDataForNewRetreat() {
+            if (confirm('စခန်းပွဲအသစ်အတွက် အလှူရှင် အချက်အလက်များအားလုံးကို အသစ်ပြန်စရန် သေချာပါသလား?')) {
+                dbData.days = {
+                    day1: createDaySlots(),
+                    day2: createDaySlots(),
+                    day3: createDaySlots()
+                };
+                if (firebaseRef) {
+                    firebaseRef.set(dbData);
+                }
+                renderDayContent();
+                renderAdminSlotsList();
+                alert('အလှူရှင်အကွက်များ အားလုံး အသစ်ပြန်လည် စတင်လိုက်ပါပြီ။');
+            }
+        }
+
+        window.onload = function() {
+            initFirebase();
+            renderAppHeaderAndTabs();
+            renderSummaryCards();
+            renderDayContent();
+        };
+    </script>
+</body>
+</html>
